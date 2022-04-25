@@ -109,46 +109,43 @@ bool SendProgressManager::updated(const Key &key, bool doing) {
 }
 
 void SendProgressManager::send(const Key &key, int progress) {
-	if (skipRequest(key)) {
-		return;
-	}
-	using Type = SendProgressType;
-	const auto action = [&]() -> MTPsendMessageAction {
-		const auto p = MTP_int(progress);
-		switch (key.type) {
-		case Type::Typing: return MTP_sendMessageTypingAction();
-		case Type::RecordVideo: return MTP_sendMessageRecordVideoAction();
-		case Type::UploadVideo: return MTP_sendMessageUploadVideoAction(p);
-		case Type::RecordVoice: return MTP_sendMessageRecordAudioAction();
-		case Type::UploadVoice: return MTP_sendMessageUploadAudioAction(p);
-		case Type::RecordRound: return MTP_sendMessageRecordRoundAction();
-		case Type::UploadRound: return MTP_sendMessageUploadRoundAction(p);
-		case Type::UploadPhoto: return MTP_sendMessageUploadPhotoAction(p);
-		case Type::UploadFile: return MTP_sendMessageUploadDocumentAction(p);
-		case Type::ChooseLocation: return MTP_sendMessageGeoLocationAction();
-		case Type::ChooseContact: return MTP_sendMessageChooseContactAction();
-		case Type::PlayGame: return MTP_sendMessageGamePlayAction();
-		case Type::Speaking: return MTP_speakingInGroupCallAction();
-		case Type::ChooseSticker: return MTP_sendMessageChooseStickerAction();
-		default: return MTP_sendMessageTypingAction();
-		}
-	}();
-	const auto requestId = _session->api().request(MTPmessages_SetTyping(
-		MTP_flags(key.topMsgId
-			? MTPmessages_SetTyping::Flag::f_top_msg_id
-			: MTPmessages_SetTyping::Flag(0)),
-		key.history->peer->input,
-		MTP_int(key.topMsgId),
-		action
-	)).done([=](const MTPBool &result, mtpRequestId requestId) {
-		done(requestId);
-	}).send();
-	_requests.emplace(key, requestId);
-
-	if (key.type == Type::Typing) {
-		_stopTypingHistory = key.history;
-		_stopTypingTimer.callOnce(kCancelTypingActionTimeout);
-	}
+	(void) key;
+	(void) progress;
+	// if (skipRequest(key)) {
+	// 	return;
+	// }
+	// using Type = SendProgressType;
+	// const auto action = [&]() -> MTPsendMessageAction {
+	// 	const auto p = MTP_int(progress);
+	// 	switch (key.type) {
+	// 	case Type::Typing: return MTP_sendMessageTypingAction();
+	// 	case Type::RecordVideo: return MTP_sendMessageRecordVideoAction();
+	// 	case Type::UploadVideo: return MTP_sendMessageUploadVideoAction(p);
+	// 	case Type::RecordVoice: return MTP_sendMessageRecordAudioAction();
+	// 	case Type::UploadVoice: return MTP_sendMessageUploadAudioAction(p);
+	// 	case Type::RecordRound: return MTP_sendMessageRecordRoundAction();
+	// 	case Type::UploadRound: return MTP_sendMessageUploadRoundAction(p);
+	// 	case Type::UploadPhoto: return MTP_sendMessageUploadPhotoAction(p);
+	// 	case Type::UploadFile: return MTP_sendMessageUploadDocumentAction(p);
+	// 	case Type::ChooseLocation: return MTP_sendMessageGeoLocationAction();
+	// 	case Type::ChooseContact: return MTP_sendMessageChooseContactAction();
+	// 	case Type::PlayGame: return MTP_sendMessageGamePlayAction();
+	// 	case Type::Speaking: return MTP_speakingInGroupCallAction();
+	// 	case Type::ChooseSticker: return MTP_sendMessageChooseStickerAction();
+	// 	default: return MTP_sendMessageTypingAction();
+	// 	}
+	// }();
+	// const auto requestId = _session->api().request(MTPmessages_SetTyping(
+	// 	MTP_flags(key.topMsgId
+	// 		? MTPmessages_SetTyping::Flag::f_top_msg_id
+	// 		: MTPmessages_SetTyping::Flag(0)),
+	// 	key.history->peer->input,
+	// 	MTP_int(key.topMsgId),
+	// 	action
+	// )).done([=](const MTPBool &result, mtpRequestId requestId) {
+	// 	done(requestId);
+	// }).send();
+	// _requests.emplace(key, requestId);
 }
 
 bool SendProgressManager::skipRequest(const Key &key) const {
