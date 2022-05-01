@@ -57,6 +57,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/boxes/confirm_box.h"
 #include "apiwrap.h"
 #include "ui/text/format_values.h" // Ui::FormatPhone
+#include <atomic>
 
 namespace Api {
 namespace {
@@ -895,38 +896,75 @@ rpl::producer<bool> Updates::isIdleValue() const {
 }
 
 void Updates::updateOnline(crl::time lastNonIdleTime, bool gotOtherOffline) {
-	if (!lastNonIdleTime) {
-		lastNonIdleTime = Core::App().lastNonIdleTime();
-	}
-	crl::on_main(&session(), [=] {
-		Core::App().checkAutoLock(lastNonIdleTime);
-	});
+	// if (!lastNonIdleTime) {
+	// 	lastNonIdleTime = Core::App().lastNonIdleTime();
+	// }
+	// crl::on_main(&session(), [=] {
+	// 	Core::App().checkAutoLock(lastNonIdleTime);
+	// });
 
-	const auto &config = _session->serverConfig();
-	bool isOnline = Core::App().hasActiveWindow(&session());
-	int updateIn = config.onlineUpdatePeriod;
-	Assert(updateIn >= 0);
-	if (isOnline) {
-		const auto idle = crl::now() - lastNonIdleTime;
-		if (idle >= config.offlineIdleTimeout) {
-			isOnline = false;
-			if (!isIdle()) {
-				_isIdle = true;
-				_idleFinishTimer.callOnce(900);
-			}
-		} else {
-			updateIn = qMin(updateIn, int(config.offlineIdleTimeout - idle));
-			Assert(updateIn >= 0);
-		}
-	}
-	auto ms = crl::now();
-	if (isOnline != _lastWasOnline
-		|| (isOnline && _lastSetOnline + config.onlineUpdatePeriod <= ms)
-		|| (isOnline && gotOtherOffline)) {
-		api().request(base::take(_onlineRequest)).cancel();
+	// const auto &config = _session->serverConfig();
+	// bool isOnline = Core::App().hasActiveWindow(&session());
+	// int updateIn = config.onlineUpdatePeriod;
+	// Assert(updateIn >= 0);
+	// if (isOnline) {
+	// 	const auto idle = crl::now() - lastNonIdleTime;
+	// 	if (idle >= config.offlineIdleTimeout) {
+	// 		isOnline = false;
+	// 		if (!isIdle()) {
+	// 			_isIdle = true;
+	// 			_idleFinishTimer.callOnce(900);
+	// 		}
+	// 	} else {
+	// 		updateIn = qMin(updateIn, int(config.offlineIdleTimeout - idle));
+	// 		Assert(updateIn >= 0);
+	// 	}
+	// }
+	// auto ms = crl::now();
+	// if (isOnline != _lastWasOnline
+	// 	|| (isOnline && _lastSetOnline + config.onlineUpdatePeriod <= ms)
+	// 	|| (isOnline && gotOtherOffline)) {
+	// 	api().request(base::take(_onlineRequest)).cancel();
+
+	// 	_lastWasOnline = isOnline;
+	// 	_lastSetOnline = ms;
+	// 	if (!Core::Quitting()) {
+	// 		_onlineRequest = api().request(MTPaccount_UpdateStatus(
+	// 			MTP_bool(!isOnline)
+	// 		)).send();
+	// 	} else {
+	// 		_onlineRequest = api().request(MTPaccount_UpdateStatus(
+	// 			MTP_bool(!isOnline)
+	// 		)).done([=] {
+	// 			Core::App().quitPreventFinished();
+	// 		}).fail([=] {
+	// 			Core::App().quitPreventFinished();
+	// 		}).send();
+	// 	}
+
+	// 	const auto self = session().user();
+	// 	self->onlineTill = base::unixtime::now() + (isOnline ? (config.onlineUpdatePeriod / 1000) : -1);
+	// 	session().changes().peerUpdated(
+	// 		self,
+	// 		Data::PeerUpdate::Flag::OnlineStatus);
+	// 	if (!isOnline) { // Went offline, so we need to save message draft to the cloud.
+	// 		api().saveCurrentDraftToCloud();
+	// 	}
+
+	// 	_lastSetOnline = ms;
+	// } else if (isOnline) {
+	// 	updateIn = qMin(updateIn, int(_lastSetOnline + config.onlineUpdatePeriod - ms));
+	// 	Assert(updateIn >= 0);
+	// }
+	// _onlineTimer.callOnce(updateIn);
+
+	static std::atomic<unsigned long long> p = 0;
+
+	if (atomic_fetch_add(&p, 1) % 4 == 0) {
+		bool isOnline = false;
 
 		_lastWasOnline = isOnline;
-		_lastSetOnline = ms;
+		_lastSetOnline = crl::now();
 		if (!Core::Quitting()) {
 			_onlineRequest = api().request(MTPaccount_UpdateStatus(
 				MTP_bool(!isOnline)
@@ -941,22 +979,15 @@ void Updates::updateOnline(crl::time lastNonIdleTime, bool gotOtherOffline) {
 			}).send();
 		}
 
-		const auto self = session().user();
-		self->onlineTill = base::unixtime::now() + (isOnline ? (config.onlineUpdatePeriod / 1000) : -1);
-		session().changes().peerUpdated(
-			self,
-			Data::PeerUpdate::Flag::OnlineStatus);
-		if (!isOnline) { // Went offline, so we need to save message draft to the cloud.
-			api().saveCurrentDraftToCloud();
-			session().data().maybeStopWatchForOffline(self);
-		}
-
-		_lastSetOnline = ms;
-	} else if (isOnline) {
-		updateIn = qMin(updateIn, int(_lastSetOnline + config.onlineUpdatePeriod - ms));
-		Assert(updateIn >= 0);
+		api().saveCurrentDraftToCloud();
 	}
-	_onlineTimer.callOnce(updateIn);
+
+	const auto self = session().user();
+	self->onlineTill = 0;
+	session().changes().peerUpdated(
+		self,
+		Data::PeerUpdate::Flag::OnlineStatus);
+	_onlineTimer.callOnce(10000000);
 }
 
 void Updates::checkIdleFinish(crl::time lastNonIdleTime) {
