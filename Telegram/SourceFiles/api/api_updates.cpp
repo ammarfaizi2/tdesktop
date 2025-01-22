@@ -1394,10 +1394,10 @@ void Updates::applyUpdateNoPtsCheck(const MTPUpdate &update) {
 		}
 	} break;
 
-	case mtpc_updateDeleteMessages: {
-		auto &d = update.c_updateDeleteMessages();
-		_session->data().processNonChannelMessagesDeleted(d.vmessages().v);
-	} break;
+	//case mtpc_updateDeleteMessages: {
+	//	auto &d = update.c_updateDeleteMessages();
+	//	_session->data().processNonChannelMessagesDeleted(d.vmessages().v);
+	//} break;
 
 	case mtpc_updateNewChannelMessage: {
 		auto &d = update.c_updateNewChannelMessage();
@@ -1444,12 +1444,12 @@ void Updates::applyUpdateNoPtsCheck(const MTPUpdate &update) {
 		Q_UNUSED(d); // Web page was updated anyway.
 	} break;
 
-	case mtpc_updateDeleteChannelMessages: {
-		auto &d = update.c_updateDeleteChannelMessages();
-		_session->data().processMessagesDeleted(
-			peerFromChannel(d.vchannel_id().v),
-			d.vmessages().v);
-	} break;
+	//case mtpc_updateDeleteChannelMessages: {
+	//	auto &d = update.c_updateDeleteChannelMessages();
+	//	_session->data().processMessagesDeleted(
+	//		peerFromChannel(d.vchannel_id().v),
+	//		d.vmessages().v);
+	//} break;
 
 	case mtpc_updatePinnedMessages: {
 		const auto &d = update.c_updatePinnedMessages();
@@ -1847,26 +1847,26 @@ void Updates::feedUpdate(const MTPUpdate &update) {
 	} break;
 
 	// Deleted messages.
-	case mtpc_updateDeleteMessages: {
-		auto &d = update.c_updateDeleteMessages();
+	//case mtpc_updateDeleteMessages: {
+	//	auto &d = update.c_updateDeleteMessages();
+	//
+	//	updateAndApply(d.vpts().v, d.vpts_count().v, update);
+	//} break;
 
-		updateAndApply(d.vpts().v, d.vpts_count().v, update);
-	} break;
+	//case mtpc_updateDeleteChannelMessages: {
+	//	auto &d = update.c_updateDeleteChannelMessages();
+	//	auto channel = session().data().channelLoaded(d.vchannel_id());
 
-	case mtpc_updateDeleteChannelMessages: {
-		auto &d = update.c_updateDeleteChannelMessages();
-		auto channel = session().data().channelLoaded(d.vchannel_id());
-
-		if (channel && !_handlingChannelDifference) {
-			if (channel->ptsRequesting()) { // skip global updates while getting channel difference
-				MTP_LOG(0, ("Skipping delete channel messages because getting the difference."));
-				return;
-			}
-			channel->ptsUpdateAndApply(d.vpts().v, d.vpts_count().v, update);
-		} else {
-			applyUpdateNoPtsCheck(update);
-		}
-	} break;
+	//	if (channel && !_handlingChannelDifference) {
+	//		if (channel->ptsRequesting()) { // skip global updates while getting channel difference
+	//			MTP_LOG(0, ("Skipping delete channel messages because getting the difference."));
+	//			return;
+	//		}
+	//		channel->ptsUpdateAndApply(d.vpts().v, d.vpts_count().v, update);
+	//	} else {
+	//		applyUpdateNoPtsCheck(update);
+	//	}
+	//} break;
 
 	case mtpc_updateNewScheduledMessage: {
 		const auto &d = update.c_updateNewScheduledMessage();
